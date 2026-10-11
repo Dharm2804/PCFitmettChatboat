@@ -3,412 +3,1440 @@
     Layout = null;
 }
 
-<style>
-    * { box-sizing: border-box; }
-    .jm { max-width: 1500px; margin: auto; padding: 22px; color: #1f2937; }
-    .jm .panel, .jm .stat { background: #fff; border-radius: 12px; box-shadow: 0 2px 10px #00000012; }
-    .jm .header { padding: 24px; margin-bottom: 18px; }
-    .jm .header h1 { margin: 0 0 8px; font-size: 28px; }
-    .jm .muted { color: #6b7280; }
-    .jm .toolbar { padding: 16px; margin-bottom: 18px; display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
-    .jm button, .jm select, .jm input, .jm textarea { font: inherit; }
-    .jm button { border:0; border-radius:7px; padding:10px 14px; cursor:pointer; color:#fff; font-weight:600; }
-    .jm button:hover { opacity:.88; }
-    .jm .primary { background:#2563eb; } .jm .success { background:#16a34a; }
-    .jm .warning { background:#d97706; } .jm .danger { background:#dc2626; }
-    .jm .secondary { background:#6b7280; } .jm .info { background:#0891b2; }
-    .jm select, .jm input, .jm textarea { padding:10px 12px; border:1px solid #d1d5db; border-radius:7px; }
-    .jm .search { flex:1; min-width:220px; }
-    .jm .search input { width:100%; }
-    .jm .file-info { width:100%; font-size:12px; overflow-wrap:anywhere; }
-    .jm .stats { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:14px; margin-bottom:18px; }
-    .jm .stat { padding:17px; } .jm .label { color:#6b7280; font-size:13px; margin-bottom:8px; }
-    .jm .value { font-size:25px; font-weight:700; }
-    .jm .table-wrap { overflow:auto; }
-    .jm table { width:100%; border-collapse:collapse; min-width:1050px; }
-    .jm thead { background:#111827; color:white; }
-    .jm th,.jm td { padding:12px; border-bottom:1px solid #e5e7eb; text-align:left; vertical-align:middle; font-size:13px; }
-    .jm td.url { max-width:350px; overflow-wrap:anywhere; }
-    .jm a { color:#2563eb; text-decoration:none; }
-    .jm .badge { display:inline-block; padding:5px 9px; border-radius:20px; background:#f3f4f6; color:#4b5563; font-weight:700; }
-    .jm .true { background:#dcfce7; color:#166534; } .jm .deleted { background:#fee2e2; color:#991b1b; }
-    .jm .actions { display:flex; flex-wrap:wrap; gap:5px; }
-    .jm .actions button { padding:7px 9px; font-size:12px; }
-    .jm .modified-row { background:#fffbeb; } .jm .deleted-row { background:#fef2f2; }
-    .jm .empty { text-align:center; padding:35px; color:#6b7280; }
-    .jm .status { display:none; padding:11px 14px; margin-bottom:14px; border-radius:7px; }
-    .jm .status.show { display:block; } .jm .status.success-msg { background:#dcfce7; color:#166534; }
-    .jm .status.error-msg { background:#fee2e2; color:#991b1b; } .jm .status.info-msg { background:#dbeafe; color:#1e40af; }
-    .jm .modal { display:none; position:fixed; inset:0; z-index:10000; background:#0008; align-items:center; justify-content:center; padding:18px; }
-    .jm .modal.show { display:flex; } .jm .modal-content { background:white; width:100%; max-width:650px; max-height:90vh; overflow:auto; padding:24px; border-radius:12px; }
-    .jm .modal-content h2 { margin-top:0; } .jm .form-group { margin-bottom:16px; }
-    .jm .form-group label { display:block; font-weight:600; margin-bottom:7px; }
-    .jm .form-group input,.jm .form-group textarea { width:100%; }
-    .jm textarea { min-height:160px; } .jm .modal-actions { display:flex; justify-content:flex-end; gap:9px; margin-top:18px; }
-    .jm .json-preview { white-space:pre; overflow:auto; max-height:60vh; background:#111827; color:#d1d5db; padding:14px; border-radius:8px; font:12px Consolas,monospace; }
-    @@media(max-width:900px) { .jm .stats { grid-template-columns:repeat(2,minmax(0,1fr)); } }
-    @@media(max-width:600px) { .jm { padding:10px; } .jm .stats { grid-template-columns:1fr; } .jm .toolbar { align-items:stretch; flex-direction:column; } .jm .toolbar button,.jm .toolbar select { width:100%; } }
-</style>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JSON Data Manager</title>
 
-<div class="jm">
-    <div class="panel header">
-        <h1 id="pageTitle">Articles Manager</h1>
-        <p class="muted">Manage articles.json and pdf.json from the project's data folder.</p>
-    </div>
-
-    <div id="statusMessage" class="status" role="status"></div>
-
-    <div class="panel toolbar">
-        <select id="sourceSelect" aria-label="JSON source">
-            <option value="articles">Articles</option>
-            <option value="pdf">PDF</option>
-        </select>
-        <button class="success" id="saveBtn">💾 Save Changes</button>
-        <button class="info" id="addBtn">➕ Add URL</button>
-        <button class="warning" id="bulkBtn">➕ Add Multiple</button>
-        <button class="secondary" id="previewBtn">👁 JSON Preview</button>
-        <button class="secondary" id="reloadBtn">🔄 Reload</button>
-        <div class="search"><input id="searchInput" placeholder="Search by ID or URL..." /></div>
-        <div class="file-info">JSON file: <strong id="fileName">Loading...</strong><br />Server path: <span id="filePath"></span></div>
-    </div>
-
-    <div class="stats">
-        <div class="stat"><div class="label">Total</div><div class="value" id="totalCount">0</div></div>
-        <div class="stat"><div class="label">Updated</div><div class="value" id="updatedCount">0</div></div>
-        <div class="stat"><div class="label">Deleted</div><div class="value" id="deletedCount">0</div></div>
-        <div class="stat"><div class="label">With Previous URL</div><div class="value" id="previousCount">0</div></div>
-        <div class="stat"><div class="label">Active</div><div class="value" id="activeCount">0</div></div>
-    </div>
-
-    <div class="panel table-wrap">
-        <table>
-            <thead><tr><th>ID</th><th>Current URL</th><th>Previous URL</th><th>Flag Update</th><th>Delete</th><th>Actions</th></tr></thead>
-            <tbody id="recordsBody"><tr><td colspan="6" class="empty">Loading...</td></tr></tbody>
-        </table>
-    </div>
-
-    <div class="modal" id="addModal">
-        <div class="modal-content">
-            <h2>Add New URL</h2>
-            <div class="form-group"><label for="newUrl">Current URL</label><input id="newUrl" type="url" placeholder="https://example.com/article" /></div>
-            <div class="modal-actions"><button class="secondary" data-close="addModal">Cancel</button><button class="success" id="confirmAddBtn">Add URL</button></div>
-        </div>
-    </div>
-
-    <div class="modal" id="changeModal">
-        <div class="modal-content">
-            <h2>Change URL</h2>
-            <div class="form-group"><label for="changeId">ID</label><input id="changeId" readonly /></div>
-            <div class="form-group"><label for="oldUrl">Current URL (will become Previous URL)</label><input id="oldUrl" readonly /></div>
-            <div class="form-group"><label for="changeUrl">New Current URL</label><input id="changeUrl" type="url" placeholder="Enter new URL" /></div>
-            <div class="modal-actions"><button class="secondary" data-close="changeModal">Cancel</button><button class="success" id="confirmChangeBtn">Change URL</button></div>
-        </div>
-    </div>
-
-    <div class="modal" id="bulkModal">
-        <div class="modal-content">
-            <h2>Add Multiple URLs</h2>
-            <div class="form-group"><label for="bulkUrls">One URL per line</label><textarea id="bulkUrls" placeholder="https://example.com/article-1&#10;https://example.com/article-2"></textarea></div>
-            <div class="modal-actions"><button class="secondary" data-close="bulkModal">Cancel</button><button class="success" id="confirmBulkBtn">Add URLs</button></div>
-        </div>
-    </div>
-
-    <div class="modal" id="previewModal">
-        <div class="modal-content" style="max-width:1000px">
-            <h2>JSON Preview</h2><pre id="jsonPreview" class="json-preview"></pre>
-            <div class="modal-actions"><button class="secondary" data-close="previewModal">Close</button><button class="success" id="copyBtn">Copy JSON</button></div>
-        </div>
-    </div>
-</div>
-
-<script>
-    (() => {
-        "use strict";
-
-        let records = [];
-        let currentSource = "articles";
-        let hasUnsavedChanges = false;
-        let statusTimer;
-
-        const $ = id => document.getElementById(id);
-        const endpoints = {
-            load: source => '@Url.Action("Load", "JsonManager")' + '?source=' + encodeURIComponent(source),
-            save: source => '@Url.Action("Save", "JsonManager")' + '?source=' + encodeURIComponent(source)
-        };
-
-async function requestJson(url, options = {}) {
-    const response = await fetch(url, options);
-
-    const result = await response.json();
-
-    if (!response.ok) {
-        throw new Error(
-            result.message || `Request failed (${response.status})`
-        );
-    }
-
-    return result;
-}
-
-        async function loadSource() {
-            try {
-                const result = await requestJson(endpoints.load(currentSource), { cache: "no-store" });
-                records = (result.records || []).map(normalize);
-                hasUnsavedChanges = false;
-                $("pageTitle").textContent = currentSource === "articles" ? "Articles Manager" : "PDF Manager";
-                $("fileName").textContent = result.fileName;
-                $("filePath").textContent = result.filePath;
-                render();
-                stats();
-                showStatus(`${result.fileName} loaded (${records.length} items).`, "success");
-            } catch (error) {
-                records = [];
-                render();
-                stats();
-                showStatus(error.message, "error");
+    <style>
+            * {
+                box-sizing: border-box;
             }
-        }
 
-        function normalize(item) {
-            return {
-                id: Number(item.id) || 0,
-                currentUrl: String(item.currentUrl || ""),
-                previousUrl: String(item.previousUrl || ""),
-                flagupdate: Boolean(item.flagupdate),
-                delete: Boolean(item.delete)
-            };
-        }
+            body {
+                margin: 0;
+                background: #f3f6fb;
+                font-family: Arial, Helvetica, sans-serif;
+                color: #1f2937;
+            }
 
-        async function saveJsonFile() {
-            try {
-                const result = await requestJson(endpoints.save(currentSource), {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(records)
+            .jm {
+                max-width: 1500px;
+                margin: auto;
+                padding: 22px;
+            }
+
+            .panel, .stat {
+                background: white;
+                border-radius: 12px;
+                box-shadow: 0 2px 10px #0000000d;
+            }
+
+            .header {
+                padding: 24px;
+                margin-bottom: 18px;
+            }
+
+                .header h1 {
+                    margin: 0 0 8px;
+                    font-size: 28px;
+                }
+
+            .muted {
+                color: #6b7280;
+            }
+
+            .toolbar {
+                padding: 16px;
+                margin-bottom: 18px;
+                display: flex;
+                gap: 10px;
+                flex-wrap: wrap;
+                align-items: center;
+            }
+
+            button, select, input, textarea {
+                font: inherit;
+            }
+
+            button {
+                border: 0;
+                border-radius: 7px;
+                padding: 10px 14px;
+                cursor: pointer;
+                color: white;
+                font-weight: 600;
+            }
+
+                button:hover {
+                    opacity: .88;
+                }
+
+                button:disabled {
+                    opacity: .55;
+                    cursor: not-allowed;
+                }
+
+            .primary {
+                background: #2563eb;
+            }
+
+            .success {
+                background: #16a34a;
+            }
+
+            .warning {
+                background: #d97706;
+            }
+
+            .danger {
+                background: #dc2626;
+            }
+
+            .secondary {
+                background: #6b7280;
+            }
+
+            .info {
+                background: #0891b2;
+            }
+
+            select, input, textarea {
+                padding: 10px 12px;
+                border: 1px solid #d1d5db;
+                border-radius: 7px;
+                background: white;
+            }
+
+            .search {
+                flex: 1;
+                min-width: 220px;
+            }
+
+                .search input {
+                    width: 100%;
+                }
+
+            .file-info {
+                width: 100%;
+                font-size: 12px;
+                overflow-wrap: anywhere;
+                line-height: 1.8;
+            }
+
+            .stats {
+                display: grid;
+                grid-template-columns: repeat(5, minmax(0, 1fr));
+                gap: 14px;
+                margin-bottom: 18px;
+            }
+
+            .stat {
+                padding: 17px;
+            }
+
+            .label {
+                color: #6b7280;
+                font-size: 13px;
+                margin-bottom: 8px;
+            }
+
+            .value {
+                font-size: 25px;
+                font-weight: 700;
+            }
+
+            .table-wrap {
+                overflow: auto;
+            }
+
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                min-width: 850px;
+            }
+
+            thead {
+                background: #111827;
+                color: white;
+            }
+
+            th, td {
+                padding: 12px;
+                border-bottom: 1px solid #e5e7eb;
+                text-align: left;
+                vertical-align: middle;
+                font-size: 13px;
+            }
+
+                td.url {
+                    max-width: 350px;
+                    overflow-wrap: anywhere;
+                }
+
+            a {
+                color: #2563eb;
+                text-decoration: none;
+            }
+
+                a:hover {
+                    text-decoration: underline;
+                }
+
+            .pdf-link {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                font-weight: 600;
+                overflow-wrap: anywhere;
+            }
+
+            .pdf-icon {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 32px;
+                height: 38px;
+                background: #fee2e2;
+                color: #b91c1c;
+                border-radius: 5px;
+                font-size: 10px;
+                font-weight: bold;
+                flex-shrink: 0;
+            }
+
+            .badge {
+                display: inline-block;
+                padding: 5px 9px;
+                border-radius: 20px;
+                background: #f3f4f6;
+                color: #4b5563;
+                font-weight: 700;
+            }
+
+            .true {
+                background: #dcfce7;
+                color: #166534;
+            }
+
+            .deleted {
+                background: #fee2e2;
+                color: #991b1b;
+            }
+
+            .actions {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 5px;
+            }
+
+                .actions button {
+                    padding: 7px 9px;
+                    font-size: 12px;
+                }
+
+            .modified-row {
+                background: #fffbeb;
+            }
+
+            .deleted-row {
+                background: #fef2f2;
+            }
+
+            .empty {
+                text-align: center;
+                padding: 35px;
+                color: #6b7280;
+            }
+
+            .status {
+                display: none;
+                padding: 11px 14px;
+                margin-bottom: 14px;
+                border-radius: 7px;
+                overflow-wrap: anywhere;
+            }
+
+                .status.show {
+                    display: block;
+                }
+
+            .success-msg {
+                background: #dcfce7;
+                color: #166534;
+            }
+
+            .error-msg {
+                background: #fee2e2;
+                color: #991b1b;
+            }
+
+            .info-msg {
+                background: #dbeafe;
+                color: #1e40af;
+            }
+
+            .modal {
+                display: none;
+                position: fixed;
+                inset: 0;
+                z-index: 10000;
+                background: #0008;
+                align-items: center;
+                justify-content: center;
+                padding: 18px;
+            }
+
+                .modal.show {
+                    display: flex;
+                }
+
+            .modal-content {
+                background: white;
+                width: 100%;
+                max-width: 650px;
+                max-height: 90vh;
+                overflow: auto;
+                padding: 24px;
+                border-radius: 12px;
+            }
+
+                .modal-content h2 {
+                    margin-top: 0;
+                }
+
+            .form-group {
+                margin-bottom: 16px;
+            }
+
+                .form-group label {
+                    display: block;
+                    font-weight: 600;
+                    margin-bottom: 7px;
+                }
+
+                .form-group input, .form-group textarea {
+                    width: 100%;
+                }
+
+            textarea {
+                min-height: 160px;
+                resize: vertical;
+            }
+
+            .modal-actions {
+                display: flex;
+                justify-content: flex-end;
+                gap: 9px;
+                margin-top: 18px;
+                flex-wrap: wrap;
+            }
+
+            .json-preview {
+                white-space: pre;
+                overflow: auto;
+                max-height: 60vh;
+                background: #111827;
+                color: #d1d5db;
+                padding: 14px;
+                border-radius: 8px;
+                font: 12px Consolas, monospace;
+            }
+
+            .upload-box {
+                border: 2px dashed #cbd5e1;
+                border-radius: 10px;
+                padding: 25px;
+                text-align: center;
+                background: #f8fafc;
+            }
+
+                .upload-box.dragover {
+                    border-color: #2563eb;
+                    background: #eff6ff;
+                }
+
+            .upload-filename {
+                display: block;
+                margin-top: 12px;
+                color: #374151;
+                overflow-wrap: anywhere;
+            }
+
+            .hint {
+                font-size: 12px;
+                color: #6b7280;
+                line-height: 1.6;
+            }
+
+            @@media (max-width: 900px) {
+                .stats {
+                    grid-template-columns: repeat(2, minmax(0, 1fr));
+                }
+            }
+
+            @@media (max-width: 600px) {
+                .jm {
+                    padding: 10px;
+                }
+
+                .stats {
+                    grid-template-columns: 1fr;
+                }
+
+                .toolbar {
+                    align-items: stretch;
+                    flex-direction: column;
+                }
+
+                    .toolbar button, .toolbar select {
+                        width: 100%;
+                    }
+
+                .header h1 {
+                    font-size: 23px;
+                }
+            }
+    </style>
+</head>
+
+<body>
+    <div class="jm">
+
+        <div class="panel header">
+            <h1 id="pageTitle">Articles Manager</h1>
+            <p class="muted" id="pageDescription">
+                Manage article URLs and JSON records.
+            </p>
+        </div>
+
+        <div id="statusMessage" class="status" role="status"></div>
+
+        <div class="panel toolbar">
+            <select id="sourceSelect" aria-label="Select data source">
+                <option value="articles">Articles</option>
+                <option value="pdf">PDF Documents</option>
+            </select>
+
+            <button class="success" id="saveBtn">💾 Save Changes</button>
+            <button class="info" id="addBtn">➕ Add URL</button>
+            <button class="warning" id="bulkBtn">➕ Add Multiple URLs</button>
+
+            <button class="success" id="uploadPdfBtn" hidden>
+                📄 Upload PDF
+            </button>
+
+            <input type="file"
+                   id="pdfFileInput"
+                   accept=".pdf,application/pdf"
+                   hidden />
+
+            <button class="secondary" id="previewBtn">👁 JSON Preview</button>
+            <button class="secondary" id="reloadBtn">🔄 Reload</button>
+
+            <div class="search">
+                <input id="searchInput"
+                       placeholder="Search by ID or URL..."
+                       autocomplete="off" />
+            </div>
+
+            <div class="file-info">
+                JSON file: <strong id="fileName">Loading...</strong>
+                <br />
+                Server path: <span id="filePath"></span>
+            </div>
+        </div>
+
+        <div class="stats">
+            <div class="stat">
+                <div class="label">Total Records</div>
+                <div class="value" id="totalCount">0</div>
+            </div>
+
+            <div class="stat">
+                <div class="label">Updated</div>
+                <div class="value" id="updatedCount">0</div>
+            </div>
+
+            <div class="stat">
+                <div class="label">Deleted</div>
+                <div class="value" id="deletedCount">0</div>
+            </div>
+
+            <div class="stat">
+                <div class="label" id="previousLabel">With Previous URL</div>
+                <div class="value" id="previousCount">0</div>
+            </div>
+
+            <div class="stat">
+                <div class="label">Active</div>
+                <div class="value" id="activeCount">0</div>
+            </div>
+        </div>
+
+        <div class="panel table-wrap">
+            <table>
+                <thead id="tableHead">
+                    <tr>
+                        <th>ID</th>
+                        <th>Current URL</th>
+                        <th>Previous URL</th>
+                        <th>Flag Update</th>
+                        <th>Delete</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+
+                <tbody id="recordsBody">
+                    <tr>
+                        <td colspan="6" class="empty">Loading...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Add URL modal -->
+        <div class="modal" id="addModal">
+            <div class="modal-content">
+                <h2>Add New URL</h2>
+
+                <div class="form-group">
+                    <label for="newUrl">Current URL</label>
+                    <input id="newUrl" type="url"
+                           placeholder="https://example.com/article" />
+                </div>
+
+                <div class="modal-actions">
+                    <button class="secondary" data-close="addModal">Cancel</button>
+                    <button class="success" id="confirmAddBtn">Add URL</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Change URL modal -->
+        <div class="modal" id="changeModal">
+            <div class="modal-content">
+                <h2>Change URL</h2>
+
+                <div class="form-group">
+                    <label for="changeId">ID</label>
+                    <input id="changeId" readonly />
+                </div>
+
+                <div class="form-group">
+                    <label for="oldUrl">Current URL</label>
+                    <input id="oldUrl" readonly />
+                </div>
+
+                <div class="form-group">
+                    <label for="changeUrl">New URL</label>
+                    <input id="changeUrl" type="url"
+                           placeholder="Enter new URL" />
+                </div>
+
+                <div class="modal-actions">
+                    <button class="secondary" data-close="changeModal">Cancel</button>
+                    <button class="success" id="confirmChangeBtn">Change URL</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bulk URL modal -->
+        <div class="modal" id="bulkModal">
+            <div class="modal-content">
+                <h2>Add Multiple URLs</h2>
+
+                <div class="form-group">
+                    <label for="bulkUrls">One URL per line</label>
+                    <textarea id="bulkUrls"
+                              placeholder="https://example.com/article-1&#10;https://example.com/article-2"></textarea>
+                </div>
+
+                <div class="modal-actions">
+                    <button class="secondary" data-close="bulkModal">Cancel</button>
+                    <button class="success" id="confirmBulkBtn">Add URLs</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upload / replace PDF modal -->
+        <div class="modal" id="pdfModal">
+            <div class="modal-content">
+                <h2 id="pdfModalTitle">Upload PDF</h2>
+
+                <p class="muted">
+                    Upload a new PDF document or replace an existing document.
+                </p>
+
+                <div class="form-group">
+                    <label for="pdfPicker">Choose PDF file</label>
+
+                    <div class="upload-box" id="uploadBox">
+                        <div style="font-size:36px">📄</div>
+                        <p>Choose a PDF file from your computer</p>
+                        <button class="primary" type="button" id="choosePdfBtn">
+                            Browse PDF
+                        </button>
+                        <span class="upload-filename" id="selectedPdfName">
+                            No file selected
+                        </span>
+                    </div>
+
+                    <p class="hint">
+                        PDF only. Maximum file size: 25 MB.
+                        Uploaded files are saved on the server.
+                    </p>
+                </div>
+
+                <div class="modal-actions">
+                    <button class="secondary" data-close="pdfModal">Cancel</button>
+                    <button class="success" id="confirmUploadPdfBtn">
+                        Upload PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- JSON preview modal -->
+        <div class="modal" id="previewModal">
+            <div class="modal-content" style="max-width:1000px">
+                <h2>JSON Preview</h2>
+
+                <pre id="jsonPreview" class="json-preview"></pre>
+
+                <div class="modal-actions">
+                    <button class="secondary" data-close="previewModal">Close</button>
+                    <button class="success" id="copyBtn">Copy JSON</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+            (() => {
+                "use strict";
+
+                let records = [];
+                let currentSource = "articles";
+                let hasUnsavedChanges = false;
+                let replacingPdfId = null;
+                let selectedPdfFile = null;
+                let statusTimer = null;
+                let isBusy = false;
+
+                const $ = id => document.getElementById(id);
+
+                const endpoints = {
+                    load: source =>
+                        '@Url.Action("Load", "JsonManager")' +
+                        '?source=' + encodeURIComponent(source),
+
+                    save: source =>
+                        '@Url.Action("Save", "JsonManager")' +
+                        '?source=' + encodeURIComponent(source),
+
+                    uploadPdf: '@Url.Action("UploadPdf", "JsonManager")',
+
+                    openPdf: id =>
+                        '@Url.Action("OpenPdf", "JsonManager")' +
+                        '?id=' + encodeURIComponent(id)
+                };
+
+                async function requestJson(url, options = {}) {
+                    const response = await fetch(url, options);
+
+                    let result;
+
+                    try {
+                        result = await response.json();
+                    } catch {
+                        throw new Error("The server returned an invalid response.");
+                    }
+
+                    if (!response.ok) {
+                        throw new Error(
+                            result.message || `Request failed (${response.status})`
+                        );
+                    }
+
+                    return result;
+                }
+
+                function normalize(item) {
+                    if (currentSource === "pdf") {
+                        return {
+                            id: Number(item.id) || 0,
+                            fileName: String(item.fileName || ""),
+                            previousFileName: String(item.previousFileName || ""),
+                            flagupdate: Boolean(item.flagupdate),
+                            delete: Boolean(item.delete)
+                        };
+                    }
+
+                    return {
+                        id: Number(item.id) || 0,
+                        currentUrl: String(item.currentUrl || ""),
+                        previousUrl: String(item.previousUrl || ""),
+                        flagupdate: Boolean(item.flagupdate),
+                        delete: Boolean(item.delete)
+                    };
+                }
+
+                async function loadSource() {
+                    try {
+                        setBusy(true);
+
+                        const result = await requestJson(
+                            endpoints.load(currentSource),
+                            { cache: "no-store" }
+                        );
+
+                        records = (result.records || []).map(normalize);
+                        hasUnsavedChanges = false;
+
+                        const isPdf = currentSource === "pdf";
+
+                        $("pageTitle").textContent =
+                            isPdf ? "PDF Documents Manager" : "Articles Manager";
+
+                        $("pageDescription").textContent = isPdf
+                            ? "Upload, open, replace, and manage PDF documents."
+                            : "Manage article URLs and JSON records.";
+
+                        $("fileName").textContent = result.fileName;
+                        $("filePath").textContent = result.filePath;
+
+                        $("uploadPdfBtn").hidden = !isPdf;
+                        $("addBtn").hidden = isPdf;
+                        $("bulkBtn").hidden = isPdf;
+
+                        $("searchInput").placeholder = isPdf
+                            ? "Search by ID or PDF filename..."
+                            : "Search by ID or URL...";
+
+                        $("previousLabel").textContent = isPdf
+                            ? "With Previous PDF"
+                            : "With Previous URL";
+
+                        $("tableHead").innerHTML = isPdf
+                            ? `<tr>
+                                <th>ID</th>
+                                <th>PDF Document</th>
+                                <th>Previous PDF</th>
+                                <th>Updated</th>
+                                <th>Deleted</th>
+                                <th>Actions</th>
+                               </tr>`
+                            : `<tr>
+                                <th>ID</th>
+                                <th>Current URL</th>
+                                <th>Previous URL</th>
+                                <th>Flag Update</th>
+                                <th>Delete</th>
+                                <th>Actions</th>
+                               </tr>`;
+
+                        render();
+                        stats();
+
+                        showStatus(
+                            `${result.fileName} loaded successfully (${records.length} records).`,
+                            "success"
+                        );
+                    } catch (error) {
+                        records = [];
+                        render();
+                        stats();
+                        showStatus(error.message, "error");
+                    } finally {
+                        setBusy(false);
+                    }
+                }
+
+                async function saveJsonFile() {
+                    if (isBusy) return;
+
+                    try {
+                        setBusy(true);
+
+                        const result = await requestJson(
+                            endpoints.save(currentSource),
+                            {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify(records)
+                            }
+                        );
+
+                        hasUnsavedChanges = false;
+                        showStatus(result.message, "success");
+                    } catch (error) {
+                        showStatus(error.message, "error");
+                    } finally {
+                        setBusy(false);
+                    }
+                }
+
+                function getNextId() {
+                    return records.length
+                        ? Math.max(...records.map(x => x.id)) + 1
+                        : 1;
+                }
+
+                function isValidUrl(value) {
+                    try {
+                        const url = new URL(value);
+                        return url.protocol === "http:" ||
+                               url.protocol === "https:";
+                    } catch {
+                        return false;
+                    }
+                }
+
+                function isDuplicateUrl(value, ignoreId = null) {
+                    const normalized = value.trim().toLowerCase();
+
+                    return records.some(x =>
+                        x.id !== ignoreId &&
+                        x.currentUrl.trim().toLowerCase() === normalized
+                    );
+                }
+
+                function newRecord(url) {
+                    return {
+                        id: getNextId(),
+                        currentUrl: url,
+                        previousUrl: "",
+                        flagupdate: false,
+                        delete: false
+                    };
+                }
+
+                function addArticle() {
+                    const url = $("newUrl").value.trim();
+
+                    if (!isValidUrl(url)) {
+                        showStatus("Please enter a valid HTTP or HTTPS URL.", "error");
+                        return;
+                    }
+
+                    if (isDuplicateUrl(url)) {
+                        showStatus("This URL already exists.", "error");
+                        return;
+                    }
+
+                    records.push(newRecord(url));
+                    changed();
+                    closeModal("addModal");
+                    render();
+                    stats();
+
+                    $("newUrl").value = "";
+
+                    showStatus("URL added. Click Save Changes to save.", "success");
+                }
+
+                function addBulkArticles() {
+                    const raw = $("bulkUrls").value.trim();
+
+                    if (!raw) {
+                        showStatus("Please enter at least one URL.", "error");
+                        return;
+                    }
+
+                    let added = 0;
+                    let skipped = 0;
+
+                    raw.split(/\r?\n/)
+                        .map(x => x.trim())
+                        .filter(Boolean)
+                        .forEach(url => {
+                            if (!isValidUrl(url) || isDuplicateUrl(url)) {
+                                skipped++;
+                                return;
+                            }
+
+                            records.push(newRecord(url));
+                            added++;
+                        });
+
+                    if (added) changed();
+
+                    closeModal("bulkModal");
+                    render();
+                    stats();
+
+                    $("bulkUrls").value = "";
+
+                    showStatus(
+                        `${added} URL(s) added; ${skipped} skipped. Click Save Changes to save.`,
+                        added ? "success" : "error"
+                    );
+                }
+
+                function openChangeModal(id) {
+                    const record = records.find(x => x.id === id);
+                    if (!record) return;
+
+                    $("changeId").value = record.id;
+                    $("oldUrl").value = record.currentUrl;
+                    $("changeUrl").value = "";
+
+                    $("changeModal").classList.add("show");
+                    $("changeUrl").focus();
+                }
+
+                function changeArticleUrl() {
+                    const id = Number($("changeId").value);
+                    const url = $("changeUrl").value.trim();
+                    const record = records.find(x => x.id === id);
+
+                    if (!record) return;
+
+                    if (!isValidUrl(url)) {
+                        showStatus("Please enter a valid HTTP or HTTPS URL.", "error");
+                        return;
+                    }
+
+                    if (record.currentUrl === url) {
+                        showStatus("The new URL is the same as the current URL.", "error");
+                        return;
+                    }
+
+                    if (isDuplicateUrl(url, id)) {
+                        showStatus("This URL is already used by another item.", "error");
+                        return;
+                    }
+
+                    record.previousUrl = record.currentUrl;
+                    record.currentUrl = url;
+                    record.flagupdate = true;
+                    record.delete = false;
+
+                    changed();
+                    closeModal("changeModal");
+                    render();
+                    stats();
+
+                    showStatus("URL changed. Click Save Changes.", "success");
+                }
+
+                function toggleUpdate(id) {
+                    const record = records.find(x => x.id === id);
+                    if (!record) return;
+
+                    record.flagupdate = !record.flagupdate;
+
+                    changed();
+                    render();
+                    stats();
+                    showStatus("Update flag changed. Click Save Changes.", "info");
+                }
+
+                function toggleDelete(id) {
+                    const record = records.find(x => x.id === id);
+                    if (!record) return;
+
+                    record.delete = !record.delete;
+
+                    changed();
+                    render();
+                    stats();
+
+                    showStatus(
+                        record.delete
+                            ? "Record marked for deletion. Click Save Changes."
+                            : "Record restored. Click Save Changes.",
+                        record.delete ? "error" : "success"
+                    );
+                }
+
+                function undoChange(id) {
+                    const record = records.find(x => x.id === id);
+
+                    if (!record || !record.previousUrl) {
+                        showStatus("There is no previous URL to restore.", "error");
+                        return;
+                    }
+
+                    if (!confirm("Restore the previous URL?")) return;
+
+                    record.currentUrl = record.previousUrl;
+                    record.previousUrl = "";
+                    record.flagupdate = false;
+
+                    changed();
+                    render();
+                    stats();
+
+                    showStatus("Previous URL restored. Click Save Changes.", "success");
+                }
+
+                function render() {
+                    const search = $("searchInput").value.trim().toLowerCase();
+
+                    const filtered = records.filter(record => {
+                        if (currentSource === "pdf") {
+                            return !search ||
+                                String(record.id).includes(search) ||
+                                record.fileName.toLowerCase().includes(search) ||
+                                record.previousFileName.toLowerCase().includes(search);
+                        }
+
+                        return !search ||
+                            String(record.id).includes(search) ||
+                            record.currentUrl.toLowerCase().includes(search) ||
+                            record.previousUrl.toLowerCase().includes(search);
+                    });
+
+                    if (!filtered.length) {
+                        $("recordsBody").innerHTML =
+                            `<tr><td colspan="6" class="empty">${
+                                records.length
+                                    ? "No records match your search."
+                                    : "This file has no records yet."
+                            }</td></tr>`;
+                        return;
+                    }
+
+                    $("recordsBody").innerHTML = filtered.map(record => {
+                        const rowClass = record.delete
+                            ? "deleted-row"
+                            : record.flagupdate ? "modified-row" : "";
+
+                        if (currentSource === "pdf") {
+                            const currentLink = record.fileName
+                                ? `<a class="pdf-link"
+                                      href="${endpoints.openPdf(record.id)}"
+                                      target="_blank" rel="noopener noreferrer">
+                                       <span class="pdf-icon">PDF</span>
+                                       <span>${escapeHtml(record.fileName)}</span>
+                                   </a>`
+                                : '<span class="muted">No PDF</span>';
+
+                            // previousFileName can be an archived storage filename.
+                            // Only link to the previous file if you add a dedicated,
+                            // authorized endpoint for serving historical PDFs.
+                            const previous = record.previousFileName
+                                ? `<span title="${escapeHtml(record.previousFileName)}">
+                                       ${escapeHtml(record.previousFileName)}
+                                   </span>`
+                                : '<span class="muted">None</span>';
+
+                            return `<tr class="${rowClass}">
+                                <td><strong>${record.id}</strong></td>
+                                <td>${currentLink}</td>
+                                <td>${previous}</td>
+                                <td>
+                                    <span class="badge ${record.flagupdate ? "true" : ""}">
+                                        ${record.flagupdate ? "TRUE" : "FALSE"}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge ${record.delete ? "deleted" : ""}">
+                                        ${record.delete ? "TRUE" : "FALSE"}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="actions">
+                                        <button class="info"
+                                                data-action="replace-pdf"
+                                                data-id="${record.id}">
+                                            Replace
+                                        </button>
+                                        <button class="${record.delete ? "success" : "danger"}"
+                                                data-action="delete"
+                                                data-id="${record.id}">
+                                            ${record.delete ? "Restore" : "Delete"}
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>`;
+                        }
+
+                        const current = record.currentUrl
+                            ? `<a href="${escapeHtml(record.currentUrl)}"
+                                  target="_blank" rel="noopener noreferrer">
+                                  ${escapeHtml(record.currentUrl)}
+                               </a>`
+                            : '<span class="muted">Empty</span>';
+
+                        const previous = record.previousUrl
+                            ? `<a href="${escapeHtml(record.previousUrl)}"
+                                  target="_blank" rel="noopener noreferrer">
+                                  ${escapeHtml(record.previousUrl)}
+                               </a>`
+                            : '<span class="muted">Empty</span>';
+
+                        return `<tr class="${rowClass}">
+                            <td><strong>${record.id}</strong></td>
+                            <td class="url">${current}</td>
+                            <td class="url">${previous}</td>
+                            <td>
+                                <span class="badge ${record.flagupdate ? "true" : ""}">
+                                    ${record.flagupdate ? "TRUE" : "FALSE"}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge ${record.delete ? "deleted" : ""}">
+                                    ${record.delete ? "TRUE" : "FALSE"}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="actions">
+                                    <button class="info"
+                                            data-action="flag" data-id="${record.id}">
+                                        ${record.flagupdate ? "Unflag" : "Update"}
+                                    </button>
+                                    <button class="warning"
+                                            data-action="change" data-id="${record.id}">
+                                        Change URL
+                                    </button>
+                                    ${record.previousUrl
+                                        ? `<button class="secondary"
+                                                   data-action="undo"
+                                                   data-id="${record.id}">Undo</button>`
+                                        : ""}
+                                    <button class="${record.delete ? "success" : "danger"}"
+                                            data-action="delete" data-id="${record.id}">
+                                        ${record.delete ? "Restore" : "Delete"}
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>`;
+                    }).join("");
+                }
+
+                function stats() {
+                    $("totalCount").textContent = records.length;
+                    $("updatedCount").textContent =
+                        records.filter(x => x.flagupdate).length;
+                    $("deletedCount").textContent =
+                        records.filter(x => x.delete).length;
+
+                    $("previousCount").textContent = currentSource === "pdf"
+                        ? records.filter(x => x.previousFileName).length
+                        : records.filter(x => x.previousUrl).length;
+
+                    $("activeCount").textContent =
+                        records.filter(x => !x.delete).length;
+                }
+
+                function changed() {
+                    hasUnsavedChanges = true;
+                }
+
+                function showStatus(message, type = "info") {
+                    const el = $("statusMessage");
+
+                    el.textContent = message;
+                    el.className = "status show " +
+                        (type === "success"
+                            ? "success-msg"
+                            : type === "error"
+                                ? "error-msg"
+                                : "info-msg");
+
+                    clearTimeout(statusTimer);
+
+                    statusTimer = setTimeout(() => {
+                        el.classList.remove("show");
+                    }, 8000);
+                }
+
+                function closeModal(id) {
+                    $(id).classList.remove("show");
+                }
+
+                function escapeHtml(value) {
+                    return String(value)
+                        .replace(/&/g, "&amp;")
+                        .replace(/</g, "&lt;")
+                        .replace(/>/g, "&gt;")
+                        .replace(/"/g, "&quot;")
+                        .replace(/'/g, "&#039;");
+                }
+
+                function showJsonPreview() {
+                    $("jsonPreview").textContent =
+                        JSON.stringify(records, null, 2);
+
+                    $("previewModal").classList.add("show");
+                }
+
+                async function copyJson() {
+                    try {
+                        await navigator.clipboard.writeText(
+                            JSON.stringify(records, null, 2)
+                        );
+
+                        showStatus("JSON copied to clipboard.", "success");
+                    } catch {
+                        showStatus(
+                            "Could not copy JSON. Select the preview text manually.",
+                            "error"
+                        );
+                    }
+                }
+
+                function openPdfUpload(id = null) {
+                    replacingPdfId = id;
+                    selectedPdfFile = null;
+
+                    $("pdfFileInput").value = "";
+                    $("selectedPdfName").textContent = "No file selected";
+
+                    $("pdfModalTitle").textContent = id === null
+                        ? "Upload New PDF"
+                        : "Replace Existing PDF";
+
+                    $("confirmUploadPdfBtn").textContent = id === null
+                        ? "Upload PDF"
+                        : "Replace PDF";
+
+                    $("pdfModal").classList.add("show");
+                }
+
+                function selectPdfFile(file) {
+                    if (!file) return;
+
+                    if (!file.name.toLowerCase().endsWith(".pdf")) {
+                        selectedPdfFile = null;
+                        $("pdfFileInput").value = "";
+                        $("selectedPdfName").textContent = "No file selected";
+                        showStatus("Please select a PDF file.", "error");
+                        return;
+                    }
+
+                    if (file.size > 25 * 1024 * 1024) {
+                        selectedPdfFile = null;
+                        $("pdfFileInput").value = "";
+                        $("selectedPdfName").textContent = "No file selected";
+                        showStatus("The maximum PDF size is 25 MB.", "error");
+                        return;
+                    }
+
+                    selectedPdfFile = file;
+                    $("selectedPdfName").textContent =
+                        `${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
+                }
+
+                async function uploadPdf() {
+                    if (isBusy) return;
+
+                    if (!selectedPdfFile) {
+                        showStatus("Please choose a PDF file first.", "error");
+                        return;
+                    }
+
+                    const formData = new FormData();
+                    formData.append("file", selectedPdfFile);
+
+                    if (replacingPdfId !== null) {
+                        formData.append("id", String(replacingPdfId));
+                    }
+
+                    try {
+                        setBusy(true);
+
+                        const result = await requestJson(endpoints.uploadPdf, {
+                            method: "POST",
+                            body: formData
+                        });
+
+                        hasUnsavedChanges = false;
+                        closeModal("pdfModal");
+
+                        showStatus(result.message, "success");
+
+                        // Reload metadata from pdfs.json after upload or replacement.
+                        await loadSource();
+                    } catch (error) {
+                        showStatus(error.message, "error");
+                    } finally {
+                        setBusy(false);
+                    }
+                }
+
+                function setBusy(value) {
+                    isBusy = value;
+
+                    [
+                        "saveBtn", "reloadBtn", "uploadPdfBtn",
+                        "confirmUploadPdfBtn", "confirmAddBtn",
+                        "confirmChangeBtn", "confirmBulkBtn"
+                    ].forEach(id => {
+                        $(id).disabled = value;
+                    });
+                }
+
+                $("sourceSelect").addEventListener("change", async event => {
+                    if (hasUnsavedChanges &&
+                        !confirm("You have unsaved changes. Switching source will discard them. Continue?")) {
+                        event.target.value = currentSource;
+                        return;
+                    }
+
+                    currentSource = event.target.value;
+                    $("searchInput").value = "";
+
+                    await loadSource();
                 });
-                hasUnsavedChanges = false;
-                showStatus(result.message, "success");
-            } catch (error) {
-                showStatus(error.message, "error");
-            }
-        }
 
-        function getNextId() {
-            return records.length ? Math.max(...records.map(x => x.id)) + 1 : 1;
-        }
+                $("saveBtn").addEventListener("click", saveJsonFile);
 
-        function isValidUrl(value) {
-            try {
-                const url = new URL(value);
-                return url.protocol === "http:" || url.protocol === "https:";
-            } catch { return false; }
-        }
+                $("addBtn").addEventListener("click", () => {
+                    $("newUrl").value = "";
+                    $("addModal").classList.add("show");
+                    $("newUrl").focus();
+                });
 
-        function isDuplicateUrl(value, ignoreId = null) {
-            const normalized = value.trim().toLowerCase();
-            return records.some(x => x.id !== ignoreId && x.currentUrl.trim().toLowerCase() === normalized);
-        }
+                $("bulkBtn").addEventListener("click", () => {
+                    $("bulkUrls").value = "";
+                    $("bulkModal").classList.add("show");
+                });
 
-        function newRecord(url) {
-            return { id: getNextId(), currentUrl: url, previousUrl: "", flagupdate: false, delete: false };
-        }
+                $("uploadPdfBtn").addEventListener("click", () => {
+                    openPdfUpload();
+                });
 
-        function addArticle() {
-            const url = $("newUrl").value.trim();
-            if (!isValidUrl(url)) return showStatus("Please enter a valid HTTP or HTTPS URL.", "error");
-            if (isDuplicateUrl(url)) return showStatus("This URL already exists.", "error");
-            records.push(newRecord(url));
-            changed(); closeModal("addModal"); render(); stats();
-            $("newUrl").value = "";
-            showStatus("URL added. Click Save Changes to write it to the JSON file.", "success");
-        }
+                $("choosePdfBtn").addEventListener("click", () => {
+                    $("pdfFileInput").click();
+                });
 
-        function addBulkArticles() {
-            const raw = $("bulkUrls").value.trim();
-            if (!raw) return showStatus("Please enter at least one URL.", "error");
-            let added = 0, skipped = 0;
-            raw.split(/\r?\n/).map(x => x.trim()).filter(Boolean).forEach(url => {
-                if (!isValidUrl(url) || isDuplicateUrl(url)) { skipped++; return; }
-                records.push(newRecord(url)); added++;
-            });
-            if (added) changed();
-            closeModal("bulkModal"); render(); stats();
-            $("bulkUrls").value = "";
-            showStatus(`${added} URL(s) added; ${skipped} skipped. Click Save Changes to save.`, added ? "success" : "error");
-        }
+                $("pdfFileInput").addEventListener("change", event => {
+                    const file = event.target.files[0];
+                    selectPdfFile(file);
+                });
 
-        function openChangeModal(id) {
-            const record = records.find(x => x.id === id);
-            if (!record) return;
-            $("changeId").value = record.id;
-            $("oldUrl").value = record.currentUrl;
-            $("changeUrl").value = "";
-            $("changeModal").classList.add("show");
-            $("changeUrl").focus();
-        }
+                $("uploadBox").addEventListener("dragover", event => {
+                    event.preventDefault();
+                    $("uploadBox").classList.add("dragover");
+                });
 
-        function changeArticleUrl() {
-            const id = Number($("changeId").value);
-            const url = $("changeUrl").value.trim();
-            const record = records.find(x => x.id === id);
-            if (!record) return;
-            if (!isValidUrl(url)) return showStatus("Please enter a valid HTTP or HTTPS URL.", "error");
-            if (record.currentUrl === url) return showStatus("New URL is the same as current URL.", "error");
-            if (isDuplicateUrl(url, id)) return showStatus("This URL is already used by another item.", "error");
-            record.previousUrl = record.currentUrl;
-            record.currentUrl = url;
-            record.flagupdate = true;
-            record.delete = false;
-            changed(); closeModal("changeModal"); render(); stats();
-            showStatus("URL changed. Click Save Changes.", "success");
-        }
+                $("uploadBox").addEventListener("dragleave", () => {
+                    $("uploadBox").classList.remove("dragover");
+                });
 
-        function toggleUpdate(id) {
-            const record = records.find(x => x.id === id);
-            if (!record) return;
-            record.flagupdate = !record.flagupdate;
-            changed(); render(); stats(); showStatus("Update flag changed.", "info");
-        }
+                $("uploadBox").addEventListener("drop", event => {
+                    event.preventDefault();
+                    $("uploadBox").classList.remove("dragover");
 
-        function toggleDelete(id) {
-            const record = records.find(x => x.id === id);
-            if (!record) return;
-            record.delete = !record.delete;
-            changed(); render(); stats();
-            showStatus(record.delete ? "Item marked for deletion." : "Item restored.", record.delete ? "error" : "success");
-        }
+                    const file = event.dataTransfer.files[0];
 
-        function undoChange(id) {
-            const record = records.find(x => x.id === id);
-            if (!record || !record.previousUrl) return showStatus("There is no previous URL to restore.", "error");
-            if (!confirm("Restore the previous URL?")) return;
-            record.currentUrl = record.previousUrl;
-            record.previousUrl = "";
-            record.flagupdate = false;
-            changed(); render(); stats(); showStatus("Previous URL restored.", "success");
-        }
+                    if (file) {
+                        selectPdfFile(file);
+                    }
+                });
 
-        function render() {
-            const search = $("searchInput").value.trim().toLowerCase();
-            const filtered = records.filter(x => !search ||
-                String(x.id).includes(search) ||
-                x.currentUrl.toLowerCase().includes(search) ||
-                x.previousUrl.toLowerCase().includes(search));
+                $("confirmUploadPdfBtn").addEventListener("click", uploadPdf);
 
-            if (!filtered.length) {
-                $("recordsBody").innerHTML = `<tr><td colspan="6" class="empty">${records.length ? "No items match your search." : "This file has no items yet."}</td></tr>`;
-                return;
-            }
+                $("previewBtn").addEventListener("click", showJsonPreview);
 
-            $("recordsBody").innerHTML = filtered.map(record => {
-                const rowClass = record.delete ? "deleted-row" : record.flagupdate ? "modified-row" : "";
-                const current = record.currentUrl
-                    ? `<a href="${escapeHtml(record.currentUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(record.currentUrl)}</a>`
-                    : '<span class="muted">Empty</span>';
-                const previous = record.previousUrl
-                    ? `<a href="${escapeHtml(record.previousUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(record.previousUrl)}</a>`
-                    : '<span class="muted">Empty</span>';
-                return `<tr class="${rowClass}">
-                    <td><strong>${record.id}</strong></td>
-                    <td class="url">${current}</td><td class="url">${previous}</td>
-                    <td><span class="badge ${record.flagupdate ? "true" : ""}">${record.flagupdate ? "TRUE" : "FALSE"}</span></td>
-                    <td><span class="badge ${record.delete ? "deleted" : ""}">${record.delete ? "TRUE" : "FALSE"}</span></td>
-                    <td><div class="actions">
-                        <button class="info" data-action="flag" data-id="${record.id}">${record.flagupdate ? "Unflag" : "Update"}</button>
-                        <button class="warning" data-action="change" data-id="${record.id}">Change URL</button>
-                        ${record.previousUrl ? `<button class="secondary" data-action="undo" data-id="${record.id}">Undo</button>` : ""}
-                        <button class="${record.delete ? "success" : "danger"}" data-action="delete" data-id="${record.id}">${record.delete ? "Restore" : "Delete"}</button>
-                    </div></td>
-                </tr>`;
-            }).join("");
-        }
+                $("reloadBtn").addEventListener("click", async () => {
+                    if (hasUnsavedChanges &&
+                        !confirm("Reloading will discard unsaved changes. Continue?")) {
+                        return;
+                    }
 
-        function stats() {
-            $("totalCount").textContent = records.length;
-            $("updatedCount").textContent = records.filter(x => x.flagupdate).length;
-            $("deletedCount").textContent = records.filter(x => x.delete).length;
-            $("previousCount").textContent = records.filter(x => x.previousUrl).length;
-            $("activeCount").textContent = records.filter(x => !x.delete).length;
-        }
+                    await loadSource();
+                });
 
-        function changed() { hasUnsavedChanges = true; }
+                $("confirmAddBtn").addEventListener("click", addArticle);
+                $("confirmChangeBtn").addEventListener("click", changeArticleUrl);
+                $("confirmBulkBtn").addEventListener("click", addBulkArticles);
+                $("copyBtn").addEventListener("click", copyJson);
 
-        function showStatus(message, type = "info") {
-            const el = $("statusMessage");
-            el.textContent = message;
-            el.className = "status show " + (type === "success" ? "success-msg" : type === "error" ? "error-msg" : "info-msg");
-            clearTimeout(statusTimer);
-            statusTimer = setTimeout(() => el.classList.remove("show"), 8000);
-        }
+                $("searchInput").addEventListener("input", render);
 
-        function closeModal(id) { $(id).classList.remove("show"); }
+                $("recordsBody").addEventListener("click", event => {
+                    const button = event.target.closest("button[data-action]");
 
-        function escapeHtml(value) {
-            return String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-        }
+                    if (!button) return;
 
-        function showJsonPreview() {
-            $("jsonPreview").textContent = JSON.stringify(records, null, 2);
-            $("previewModal").classList.add("show");
-        }
+                    const id = Number(button.dataset.id);
 
-        async function copyJson() {
-            try {
-                await navigator.clipboard.writeText(JSON.stringify(records, null, 2));
-                showStatus("JSON copied to clipboard.", "success");
-            } catch {
-                showStatus("Could not copy JSON. Select the preview text manually.", "error");
-            }
-        }
+                    if (button.dataset.action === "replace-pdf") {
+                        openPdfUpload(id);
+                        return;
+                    }
 
-        $("sourceSelect").addEventListener("change", async event => {
-            if (hasUnsavedChanges && !confirm("You have unsaved changes. Switching source will discard them. Continue?")) {
-                event.target.value = currentSource; return;
-            }
-            currentSource = event.target.value;
-            $("searchInput").value = "";
-            await loadSource();
-        });
-        $("saveBtn").addEventListener("click", saveJsonFile);
-        $("addBtn").addEventListener("click", () => { $("newUrl").value = ""; $("addModal").classList.add("show"); $("newUrl").focus(); });
-        $("bulkBtn").addEventListener("click", () => { $("bulkUrls").value = ""; $("bulkModal").classList.add("show"); });
-        $("previewBtn").addEventListener("click", showJsonPreview);
-        $("reloadBtn").addEventListener("click", async () => {
-            if (hasUnsavedChanges && !confirm("Reloading will discard unsaved changes. Continue?")) return;
-            await loadSource();
-        });
-        $("confirmAddBtn").addEventListener("click", addArticle);
-        $("confirmChangeBtn").addEventListener("click", changeArticleUrl);
-        $("confirmBulkBtn").addEventListener("click", addBulkArticles);
-        $("copyBtn").addEventListener("click", copyJson);
-        $("searchInput").addEventListener("input", render);
+                    if (currentSource === "pdf") {
+                        if (button.dataset.action === "delete") {
+                            const record = records.find(x => x.id === id);
+                            if (!record) return;
 
-        $("recordsBody").addEventListener("click", event => {
-            const button = event.target.closest("button[data-action]");
-            if (!button) return;
-            const id = Number(button.dataset.id);
-            switch (button.dataset.action) {
-                case "flag": toggleUpdate(id); break;
-                case "change": openChangeModal(id); break;
-                case "undo": undoChange(id); break;
-                case "delete": toggleDelete(id); break;
-            }
-        });
+                            record.delete = !record.delete;
+                            changed();
+                            render();
+                            stats();
 
-        document.querySelectorAll(".jm [data-close]").forEach(button =>
-            button.addEventListener("click", () => closeModal(button.dataset.close)));
-        document.querySelectorAll(".jm .modal").forEach(modal => modal.addEventListener("click", event => {
-            if (event.target === modal) closeModal(modal.id);
-        }));
-        document.addEventListener("keydown", event => {
-            if (event.key === "Escape") document.querySelectorAll(".jm .modal.show").forEach(m => closeModal(m.id));
-            if (event.ctrlKey && event.key.toLowerCase() === "s") { event.preventDefault(); saveJsonFile(); }
-        });
-        window.addEventListener("beforeunload", event => {
-            if (hasUnsavedChanges) { event.preventDefault(); event.returnValue = ""; }
-        });
+                            showStatus(
+                                record.delete
+                                    ? "PDF marked as deleted. Click Save Changes to save metadata."
+                                    : "PDF restored. Click Save Changes to save metadata.",
+                                record.delete ? "error" : "success"
+                            );
+                        }
 
-        loadSource();
-    })();
-</script>
+                        return;
+                    }
+
+                    switch (button.dataset.action) {
+                        case "flag":
+                            toggleUpdate(id);
+                            break;
+                        case "change":
+                            openChangeModal(id);
+                            break;
+                        case "undo":
+                            undoChange(id);
+                            break;
+                        case "delete":
+                            toggleDelete(id);
+                            break;
+                    }
+                });
+
+                document.querySelectorAll("[data-close]").forEach(button => {
+                    button.addEventListener("click", () => {
+                        closeModal(button.dataset.close);
+                    });
+                });
+
+                document.querySelectorAll(".modal").forEach(modal => {
+                    modal.addEventListener("click", event => {
+                        if (event.target === modal) {
+                            closeModal(modal.id);
+                        }
+                    });
+                });
+
+                document.addEventListener("keydown", event => {
+                    if (event.key === "Escape") {
+                        document.querySelectorAll(".modal.show").forEach(modal => {
+                            closeModal(modal.id);
+                        });
+                    }
+
+                    if (event.ctrlKey && event.key.toLowerCase() === "s") {
+                        event.preventDefault();
+                        saveJsonFile();
+                    }
+                });
+
+                window.addEventListener("beforeunload", event => {
+                    if (hasUnsavedChanges) {
+                        event.preventDefault();
+                        event.returnValue = "";
+                    }
+                });
+
+                loadSource();
+            })();
+    </script>
+</body>
+</html>
